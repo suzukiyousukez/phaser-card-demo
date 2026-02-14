@@ -2,15 +2,13 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Phaser Card</title>
+<title>Phaser Summon</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 
 <style>
-body {
-  margin: 0;
-}
+body { margin: 0; }
 </style>
 </head>
 
@@ -37,16 +35,55 @@ function preload() {
 
 function create() {
 
-  const card = this.add.image(400, 450, "card");
-  card.setScale(0.4);
+  // フィールド枠（ただの四角）
+  const field = this.add.rectangle(400, 250, 200, 280)
+    .setStrokeStyle(4, 0x38bdf8);
 
+  // メッセージ
+  const message = this.add.text(400, 80, "召喚成功！", {
+    fontSize: "32px",
+    color: "#ffffff"
+  }).setOrigin(0.5);
+
+  message.setVisible(false);
+
+  // カード
+  const card = this.add.image(400, 500, "card");
+  card.setScale(0.4);
   card.setInteractive({ draggable: true });
 
   this.input.setDraggable(card);
 
-  this.input.on("drag", function(pointer, gameObject, dragX, dragY) {
+  this.input.on("drag", (pointer, gameObject, dragX, dragY) => {
     gameObject.x = dragX;
     gameObject.y = dragY;
+  });
+
+  this.input.on("dragend", () => {
+
+    const isInside = Phaser.Geom.Rectangle.Contains(
+      field.getBounds(),
+      card.x,
+      card.y
+    );
+
+    if (isInside) {
+
+      // 吸い込みアニメーション
+      this.tweens.add({
+        targets: card,
+        x: 400,
+        y: 250,
+        duration: 300,
+        ease: "Power2"
+      });
+
+      field.setStrokeStyle(4, 0x22c55e);
+      message.setVisible(true);
+
+      card.disableInteractive();
+    }
+
   });
 
 }
