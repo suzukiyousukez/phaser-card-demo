@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Phaser Test</title>
+<title>Phaser Card</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
@@ -17,6 +17,7 @@ body {
 <body>
 
 <script>
+
 const config = {
   type: Phaser.AUTO,
   width: 800,
@@ -31,14 +32,25 @@ const config = {
 const game = new Phaser.Game(config);
 
 function preload() {
+  this.load.image("card", "card1.jpg");
 }
 
 function create() {
-  this.add.text(300, 250, "Phaser 起動成功", {
-    fontSize: "32px",
-    color: "#ffffff"
+
+  const card = this.add.image(400, 450, "card");
+  card.setScale(0.4);
+
+  card.setInteractive({ draggable: true });
+
+  this.input.setDraggable(card);
+
+  this.input.on("drag", function(pointer, gameObject, dragX, dragY) {
+    gameObject.x = dragX;
+    gameObject.y = dragY;
   });
+
 }
+
 </script>
 
 </body>
