@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Phaser Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+
+<style>
+body {
+  margin: 0;
+}
+</style>
+</head>
+
+<body>
+
+<script>
+const config = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  backgroundColor: "#0f172a",
+  scene: {
+    preload,
+    create
+  }
+};
+
+const game = new Phaser.Game(config);
+
+function preload() {
+}
+
+function create() {
+  this.add.text(300, 250, "Phaser 起動成功", {
+    fontSize: "32px",
+    color: "#ffffff"
+  });
+}
+</script>
+
+</body>
+</html>
