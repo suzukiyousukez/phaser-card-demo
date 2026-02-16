@@ -84,19 +84,24 @@ class MainScene extends Phaser.Scene {
         this.deckText.setText(`山札\n${this.deck.length}`);
     }
 
-    drawCard(num = 1) {
-        if (this.actionsLeft <= 0) return;
-        if (this.deck.length <= 0) return;
+   drawCard(count = 1) {
+    for (let i = 0; i < count; i++) {
 
-        for (let i = 0; i < num; i++) {
-            if (this.deck.length === 0) break;
-            this.hand.push(this.deck.pop());
+        if (this.hand.length >= 4) {
+            console.log("手札上限");
+            break;
         }
 
-        this.actionsLeft--;
-        this.updateUI();
-        this.renderHand();
+        if (this.deck.length === 0) return;
+
+        const card = this.deck.pop();
+        this.hand.push(card);
     }
+
+    this.renderHand();
+    this.updateUI();
+}
+
 
     renderHand() {
         if (this.handSprites) this.handSprites.forEach(s => s.destroy());
