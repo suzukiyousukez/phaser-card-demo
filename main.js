@@ -4,36 +4,61 @@ class MainScene extends Phaser.Scene {
   }
 
   preload() {
-    // card1.jpg ～ card5.jpg を assets に置く
     for (let i = 1; i <= 5; i++) {
       this.load.image("card" + i, "assets/card" + i + ".jpg");
     }
   }
 
   create() {
-    // ===== 状態 =====
-    this.gameState = "DRAW"; // DRAW -> PLAYER_TURN -> ANIMATION
+    this.gameState = "DRAW";
+    this.turn = 1;
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
 
     // ===== ターン表示 =====
-    this.turn = 1;
-    this.turnText = this.add.text(20, 20, `${this.turn}ターン目`, {
-      fontSize: "32px",
+    this.add.text(20, 20, `${this.turn}ターン目`, {
+      fontSize: "28px",
       color: "#ffffff"
     });
 
-    // ===== デッキ20枚作成（1〜5ランダム） =====
+    // ===== デッキ作成 =====
     this.deck = [];
     for (let i = 0; i < 20; i++) {
-      const r = Phaser.Math.Between(1, 5);
+      let r = Phaser.Math.Between(1, 5);
       this.deck.push("card" + r);
     }
     Phaser.Utils.Array.Shuffle(this.deck);
 
-    // デッキ残り表示
-    this.deckText = this.add.text(20, 60, `山札: ${this.deck.length}`, {
-      fontSize: "20px",
-      color: "#aaaaaa"
+    this.graveyard = [];
+
+    // ===== 山札表示 =====
+    this.deckZone = this.add.rectangle(width - 120, 80, 80, 120, 0x4444aa)
+      .setStrokeStyle(2, 0xffffff);
+    this.deckText = this.add.text(width - 155, 40, `山札\n${this.deck.length}`, {
+      fontSize: "18px",
+      align: "center"
     });
+
+    // ===== 墓地表示 =====
+    this.graveZone = this.add.rectangle(width - 240, 80, 80, 120, 0x333333)
+      .setStrokeStyle(2, 0xffffff);
+    this.graveText = this.add.text(width - 275, 40, `墓地\n0`, {
+      fontSize: "18px",
+      align: "center"
+    });
+
+    // ===== フィールド4枠 =====
+    this.fieldSlots = [];
+    const spacing = 160;
+    const centerX = width / 2;
+
+    for (let i = 0; i < 4; i++) {
+      let x = centerX + (i - 1.5) * spacing;
+      let slot = this.add.rectangle(x, height / 2, 120, 160, 0x222222)
+        .setStrokeStyle(2, 0xffffff);
+      this.fieldSlots.push({ x, y: height / 2, occupied: false });
+    }
 
     // ===== 手札 =====
     this.hand = [];
@@ -42,40 +67,37 @@ class MainScene extends Phaser.Scene {
     this.drawCards(4);
   }
 
-  // ===== ドロー =====
   drawCards(num) {
     for (let i = 0; i < num; i++) {
       if (this.deck.length <= 0) break;
-      const card = this.deck.pop();
-      this.hand.push(card);
+      this.hand.push(this.deck.pop());
     }
 
-    this.deckText.setText(`山札: ${this.deck.length}`);
+    this.deckText.setText(`山札\n${this.deck.length}`);
     this.showHand();
-
     this.gameState = "PLAYER_TURN";
   }
 
-  // ===== 手札表示 =====
   showHand() {
-    const centerX = this.cameras.main.width / 2;
-    const y = this.cameras.main.height - 160;
-    const spacing = 180;
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const spacing = 160;
 
     this.hand.forEach((cardKey, index) => {
-      const x = centerX + (index - (this.hand.length - 1) / 2) * spacing;
+
+      let x = width / 2 + (index - (this.hand.length - 1) / 2) * spacing;
+      let y = height - 120;
 
       let card = this.add.image(x, y, cardKey);
 
-      // 🔥 高さ基準でサイズ統一（ここ重要）
-      const targetHeight = 200;
-      const scale = targetHeight / card.height;
+      // 高さ統一
+      let targetHeight = 160;
+      let scale = targetHeight / card.height;
       card.setScale(scale);
 
       card.setInteractive();
       card.cardIndex = index;
 
-      // クリック
       card.on("pointerdown", () => {
         this.summon(card);
       });
@@ -84,38 +106,38 @@ class MainScene extends Phaser.Scene {
     });
   }
 
-  // ===== 召喚 =====
   summon(selectedCard) {
     if (this.gameState !== "PLAYER_TURN") return;
 
     this.gameState = "ANIMATION";
 
-    // 他カードロック
-    this.handSprites.forEach(card => {
-      card.disableInteractive();
-    });
+    // 空いてるフィールドを探す
+    let slot = this.fieldSlots.find(s => !s.occupied);
+    if (!slot) return;
 
-    // 中央へ移動アニメ
+    slot.occupied = true;
+
+    // 他カードロック
+    this.handSprites.forEach(c => c.disableInteractive());
+
+    // フィールドへ移動
     this.tweens.add({
       targets: selectedCard,
-      x: this.cameras.main.width / 2,
-      y: this.cameras.main.height / 2,
-      scale: selectedCard.scale * 1.2,
+      x: slot.x,
+      y: slot.y,
+      scale: selectedCard.scale * 1.1,
       duration: 400,
       ease: "Power2",
       onComplete: () => {
-        this.add.text(
-          this.cameras.main.width / 2 - 90,
-          this.cameras.main.height / 2 - 220,
-          "召喚成功！",
-          { fontSize: "40px", color: "#ffff00" }
-        );
+        this.add.text(slot.x - 60, slot.y - 120, "召喚！", {
+          fontSize: "24px",
+          color: "#ffff00"
+        });
       }
     });
   }
 }
 
-// ===== Phaser設定 =====
 const config = {
   type: Phaser.AUTO,
   width: 800,
