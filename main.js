@@ -138,6 +138,10 @@ class MainScene extends Phaser.Scene {
             this.resultText.setPosition(width/2, height/2);
         }
 
+        this.endTurnButton.setDepth(1000);
+this.endTurnText.setDepth(1001);
+this.deckText.setDepth(1001);
+        
         this.updateUI();
     }
 
