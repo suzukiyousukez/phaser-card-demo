@@ -120,23 +120,24 @@ class MainScene extends Phaser.Scene {
     // -------------------------
     renderHand() {
 
-        if (this.handSprites) this.handSprites.forEach(s => s.destroy());
-        this.handSprites = [];
+    if (this.handSprites) this.handSprites.forEach(s => s.destroy());
+    this.handSprites = [];
 
-        const startX = 300;
-        const y = 500;
+    const startX = 300;
+    const y = 500;
 
-        this.hand.forEach((card, index) => {
+    this.hand.forEach((card, index) => {
 
-            const sprite = this.add.image(startX + index * 150, y, card.key)
-                .setScale(0.5)
-                .setInteractive();
+        const sprite = this.add.image(startX + index * 170, y, card.key)
+            .setDisplaySize(120, 170)   // ← 固定サイズ
+            .setInteractive();
 
-            sprite.on("pointerdown", () => this.summon(card));
+        sprite.on("pointerdown", () => this.summon(card));
 
-            this.handSprites.push(sprite);
-        });
-    }
+        this.handSprites.push(sprite);
+    });
+}
+
 
     // -------------------------
     // 召喚
@@ -165,23 +166,23 @@ class MainScene extends Phaser.Scene {
     // -------------------------
     renderField() {
 
-        if (this.fieldSprites) this.fieldSprites.forEach(s => s.destroy());
-        this.fieldSprites = [];
+    if (this.fieldSprites) this.fieldSprites.forEach(s => s.destroy());
+    this.fieldSprites = [];
 
-        const startX = 300;
-        const y = 350;
+    const startX = 300;
+    const y = 350;
 
-        this.field.forEach((card, index) => {
+    this.field.forEach((card, index) => {
 
-            const sprite = this.add.image(startX + index * 150, y, card.key)
-                .setScale(0.6)
-                .setInteractive();
+        const sprite = this.add.image(startX + index * 170, y, card.key)
+            .setDisplaySize(140, 200)  // ← 少し大きめ
+            .setInteractive();
 
-            sprite.on("pointerdown", () => this.attack(card, sprite));
+        sprite.on("pointerdown", () => this.attack(card, sprite));
 
-            this.fieldSprites.push(sprite);
-        });
-    }
+        this.fieldSprites.push(sprite);
+    });
+}
 
     // -------------------------
     // 攻撃
