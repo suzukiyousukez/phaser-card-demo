@@ -15,6 +15,7 @@ class MainScene extends Phaser.Scene {
         this.actionsLeft = 4;
         this.enemyLife = 40;
         this.enemyMaxLife = 40;
+        this.isGameOver = false;
 
         this.hand = [];
         this.field = [];
@@ -197,6 +198,8 @@ class MainScene extends Phaser.Scene {
     // =========================
     summon(cardData) {
 
+        if (this.isGameOver) return;
+
         if (this.actionsLeft <= 0) return;
         if (this.field.length >= 4) return;
 
@@ -246,6 +249,8 @@ class MainScene extends Phaser.Scene {
     // =========================
     attack(cardData, cardSprite) {
 
+        if (this.isGameOver) return;
+
         if (this.actionsLeft <= 0) return;
         if (cardData.hasAttacked) return;
 
@@ -263,12 +268,22 @@ class MainScene extends Phaser.Scene {
                 this.showTurnBanner("VICTORY", "YOU WIN");
             });
         }
+        if (this.enemyLife <= 0) {
+
+    this.isGameOver = true;
+
+    this.time.delayedCall(500, () => {
+        this.showTurnBanner("VICTORY", "YOU WIN");
+    });
+}
     }
 
     // =========================
     // ターン終了
     // =========================
     endTurn() {
+
+        if (this.isGameOver) return;
 
         this.turn++;
         this.actionsLeft = 4;
