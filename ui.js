@@ -29,11 +29,23 @@ class MainScene extends Phaser.Scene {
 
         this.hand = [];
         this.field = [];
-        this.usedCards = []; // 使用済みカード
+        this.usedCards = [];
 
         // 初期ドロー
         this.drawCard(4);
 
+        this.createLayout();
+        this.renderAll();
+
+        // リサイズ対応
+        this.scale.on('resize', this.resize, this);
+    }
+
+    resize(gameSize) {
+        const width = gameSize.width;
+        const height = gameSize.height;
+        
+        this.cameras.resize(width, height);
         this.createLayout();
         this.renderAll();
     }
@@ -47,24 +59,34 @@ class MainScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        // 敵HP
-        this.enemyText = this.add.text(width/2, height * 0.06, "", {
-            fontSize: "22px",
-            color: "#ffffff"
+        // 既存のUI要素を削除
+        if (this.enemyText) this.enemyText.destroy();
+        if (this.turnText) this.turnText.destroy();
+        if (this.deckText) this.deckText.destroy();
+        if (this.endBtn) this.endBtn.destroy();
+
+        // 敵HP（上部中央）
+        this.enemyText = this.add.text(width/2, 30, "", {
+            fontSize: Math.max(18, width * 0.05) + "px",
+            color: "#ff6666",
+            fontStyle: "bold"
         }).setOrigin(0.5);
 
-        // ターン表示
-        this.turnText = this.add.text(20, height * 0.12, "", {
-            fontSize: "16px",
-            color: "#ffffff"
+        // ターン表示（左上）
+        this.turnText = this.add.text(15, 15, "", {
+            fontSize: Math.max(14, width * 0.038) + "px",
+            color: "#ffffff",
+            backgroundColor: "#333333",
+            padding: { x: 8, y: 5 }
         });
 
-        // デッキ
-        this.deckText = this.add.text(width - 60, height * 0.12, "", {
-            fontSize: "16px",
-            backgroundColor: "#000",
-            padding: { x: 8, y: 5 }
-        }).setOrigin(0.5).setInteractive();
+        // デッキ（右上）
+        this.deckText = this.add.text(width - 15, 15, "", {
+            fontSize: Math.max(14, width * 0.038) + "px",
+            color: "#ffffff",
+            backgroundColor: "#0066cc",
+            padding: { x: 10, y: 5 }
+        }).setOrigin(1, 0).setInteractive();
 
         this.deckText.on("pointerdown", () => {
             if (this.gameOver) return;
@@ -75,30 +97,35 @@ class MainScene extends Phaser.Scene {
             }
         });
 
-        // エンドターン
-        this.endBtn = this.add.text(width/2, height * 0.94, "END TURN", {
-            fontSize: "20px",
-            backgroundColor: "#550000",
-            padding: { x: 20, y: 8 }
+        // エンドターンボタン（下部中央）
+        this.endBtn = this.add.text(width/2, height - 25, "END TURN", {
+            fontSize: Math.max(16, width * 0.045) + "px",
+            color: "#ffffff",
+            backgroundColor: "#cc0000",
+            padding: { x: 25, y: 10 }
         }).setOrigin(0.5).setInteractive();
 
         this.endBtn.on("pointerdown", () => this.endTurn());
 
-        // 勝敗表示用（初期は非表示）
-        this.resultText = this.add.text(width/2, height/2, "", {
-            fontSize: "36px",
-            color: "#ffff00",
-            backgroundColor: "#000000",
-            padding: { x: 30, y: 20 }
-        }).setOrigin(0.5).setVisible(false);
+        // 勝敗表示用
+        if (!this.resultText) {
+            this.resultText = this.add.text(width/2, height/2, "", {
+                fontSize: Math.max(28, width * 0.08) + "px",
+                color: "#ffff00",
+                backgroundColor: "#000000",
+                padding: { x: 30, y: 20 }
+            }).setOrigin(0.5).setVisible(false);
+        } else {
+            this.resultText.setPosition(width/2, height/2);
+        }
 
         this.updateUI();
     }
 
     updateUI() {
-        this.enemyText.setText("Enemy HP : " + this.enemyHP);
-        this.turnText.setText("Turn: " + this.turn + "\nActions: " + this.actionsLeft);
-        this.deckText.setText("Deck\n" + this.deck.length);
+        this.enemyText.setText("敵 HP: " + this.enemyHP);
+        this.turnText.setText("ターン " + this.turn + "\n行動 " + this.actionsLeft);
+        this.deckText.setText("山札: " + this.deck.length);
     }
 
     // =========================
@@ -110,7 +137,7 @@ class MainScene extends Phaser.Scene {
         for (let i = 0; i < num; i++) {
 
             if (this.deck.length === 0) return;
-            if (this.hand.length >= 6) return; // 手札上限を6枚に変更
+            if (this.hand.length >= 6) return;
 
             const card = this.deck.shift();
             this.hand.push(card);
@@ -155,7 +182,6 @@ class MainScene extends Phaser.Scene {
 
         if (this.enemyHP < 0) this.enemyHP = 0;
 
-        // カードをフィールドから使用済みへ移動
         const index = this.field.indexOf(card);
         if (index !== -1) {
             this.field.splice(index, 1);
@@ -165,9 +191,8 @@ class MainScene extends Phaser.Scene {
         this.updateUI();
         this.renderAll();
 
-        // 勝利判定
         if (this.enemyHP === 0) {
-            this.showResult("YOU WIN!");
+            this.showResult("勝利！");
         }
     }
 
@@ -189,10 +214,7 @@ class MainScene extends Phaser.Scene {
         
         this.turn++;
         this.actionsLeft = 4;
-        
-        // ターン開始時に2枚ドロー
         this.drawCard(2);
-        
         this.updateUI();
     }
 
@@ -215,21 +237,23 @@ class MainScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        const y = height * 0.8;
-        const spacing = 80;
+        // 手札エリア（画面下部）
+        const y = height - 90;
+        const cardWidth = Math.min(65, width * 0.16);
+        const cardHeight = cardWidth * 1.4;
+        const spacing = Math.min(75, width * 0.18);
         const startX = width/2 - ((this.hand.length - 1) * spacing) / 2;
 
         this.hand.forEach((card, index) => {
 
             const sprite = this.add.image(startX + index * spacing, y, card.key)
-                .setDisplaySize(70, 100)
+                .setDisplaySize(cardWidth, cardHeight)
                 .setInteractive();
 
             sprite.on("pointerdown", () => this.summon(card));
 
-            // 攻撃力を表示
-            const attackText = this.add.text(startX + index * spacing, y + 40, "ATK:" + card.attack, {
-                fontSize: "12px",
+            const attackText = this.add.text(startX + index * spacing, y + cardHeight/2 - 5, "ATK:" + card.attack, {
+                fontSize: Math.max(11, width * 0.03) + "px",
                 color: "#ffff00",
                 backgroundColor: "#000000",
                 padding: { x: 4, y: 2 }
@@ -250,21 +274,23 @@ class MainScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        const y = height * 0.45;
-        const spacing = 90;
+        // フィールドエリア（画面中央）
+        const y = height * 0.4;
+        const cardWidth = Math.min(80, width * 0.2);
+        const cardHeight = cardWidth * 1.4;
+        const spacing = Math.min(90, width * 0.22);
         const startX = width/2 - ((this.field.length - 1) * spacing) / 2;
 
         this.field.forEach((card, index) => {
 
             const sprite = this.add.image(startX + index * spacing, y, card.key)
-                .setDisplaySize(90, 130)
+                .setDisplaySize(cardWidth, cardHeight)
                 .setInteractive();
 
             sprite.on("pointerdown", () => this.attack(card));
 
-            // 攻撃力を表示
-            const attackText = this.add.text(startX + index * spacing, y + 55, "ATK:" + card.attack, {
-                fontSize: "14px",
+            const attackText = this.add.text(startX + index * spacing, y + cardHeight/2 - 5, "ATK:" + card.attack, {
+                fontSize: Math.max(12, width * 0.035) + "px",
                 color: "#ff0000",
                 backgroundColor: "#000000",
                 padding: { x: 5, y: 3 }
@@ -278,13 +304,18 @@ class MainScene extends Phaser.Scene {
 
 
 // =========================
-// ゲーム設定（スマホ縦）
+// ゲーム設定（レスポンシブ対応）
 // =========================
 
 const config = {
     type: Phaser.AUTO,
-    width: 390,
-    height: 844,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        parent: 'game',
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: 390,
+        height: 844
+    },
     backgroundColor: "#1e1e2f",
     scene: MainScene
 };
