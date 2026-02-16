@@ -251,7 +251,6 @@ class MainScene extends Phaser.Scene {
     this.playAttackAnimation(cardSprite, cardData.attack);
 }
 
-}
 
 
     playAttackAnimation(cardSprite, damage) {
