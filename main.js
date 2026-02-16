@@ -37,8 +37,6 @@ class MainScene extends Phaser.Scene {
         this.createLayout();
         this.renderAll();
 
-        // リサイズ対応
-        this.scale.on('resize', this.resize, this);
     }
 
     resize(gameSize) {
