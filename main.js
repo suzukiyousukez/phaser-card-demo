@@ -1,168 +1,113 @@
 class MainScene extends Phaser.Scene {
-
     constructor() {
-        super("main");
+        super("MainScene");
     }
 
     preload() {
-        this.load.image("card1", "assets/card1.jpg");
-        this.load.image("card2", "assets/card2.jpg");
-        this.load.image("card3", "assets/card3.jpg");
+        for (let i = 1; i <= 5; i++) {
+            this.load.image("card" + i, "assets/card" + i + ".jpg");
+        }
     }
 
     create() {
 
-        // ===== 状態 =====
         this.turn = 1;
         this.actionsLeft = 4;
-        this.enemyHP = 40;
-        this.gameOver = false;
-
-        this.deck = [
-            { key: "card1", attack: 5 },
-            { key: "card2", attack: 3 },
-            { key: "card3", attack: 7 },
-            { key: "card1", attack: 5 },
-            { key: "card2", attack: 3 },
-            { key: "card3", attack: 7 }
-        ];
+        this.enemyLife = 40;
 
         this.hand = [];
         this.field = [];
-        this.usedCards = [];
+        this.deck = [];
 
-        // 初期ドロー
+        this.createDeck();
+        this.createLayout();
         this.drawCard(4);
 
-        this.createLayout();
-        this.renderAll();
-
+        this.showTurnBanner("TURN 1", "DRAW");
     }
 
-    resize(gameSize) {
-        const width = gameSize.width;
-        const height = gameSize.height;
-        
-        this.cameras.resize(width, height);
-        this.createLayout();
-        this.renderAll();
+    // -------------------------
+    // デッキ生成
+    // -------------------------
+    createDeck() {
+        for (let i = 0; i < 20; i++) {
+            this.deck.push({
+                key: "card" + Phaser.Math.Between(1, 5),
+                attack: Phaser.Math.Between(1, 5),
+                hasAttacked: false
+            });
+        }
+        Phaser.Utils.Array.Shuffle(this.deck);
     }
 
-    // =========================
-    // UI
-    // =========================
-
+    // -------------------------
+    // UI作成
+    // -------------------------
     createLayout() {
 
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        // 既存のUI要素を削除
-        if (this.uiElements) {
-            this.uiElements.forEach(element => {
-                if (element && element.destroy) element.destroy();
-            });
-        }
-        this.uiElements = [];
-
-        // 上部パネル（敵情報エリア）
-        const topPanel = UIHelper.createPanel(this, 10, 10, width - 20, 80);
-        this.uiElements.push(topPanel);
+        this.add.rectangle(width/2, height/2, width, height, 0x1e1e2f);
 
         // 敵HP表示
-        this.enemyText = this.add.text(width/2, 50, "", {
+        this.enemyText = this.add.text(width/2, 40, "", {
             fontSize: "24px",
-            color: "#ff6666",
-            fontStyle: "bold"
+            color: "#ffffff"
         }).setOrigin(0.5);
-        this.uiElements.push(this.enemyText);
 
-        // 左上パネル（ターン情報）
-        const turnPanel = UIHelper.createPanel(this, 10, 100, 120, 70);
-        this.uiElements.push(turnPanel);
-
-        this.turnText = this.add.text(70, 135, "", {
-            fontSize: "14px",
+        // 山札
+        this.deckText = this.add.text(width - 100, height/2, "", {
+            fontSize: "20px",
             color: "#ffffff",
-            align: "center"
-        }).setOrigin(0.5);
-        this.uiElements.push(this.turnText);
+            backgroundColor: "#000"
+        }).setPadding(10).setInteractive();
 
-        // 右上（デッキボタン）
-        const deckBtn = UIHelper.createButton(
-            this, 
-            width - 70, 
-            135, 
-            120, 
-            70, 
-            "", 
-            () => {
-                if (this.gameOver) return;
-                if (this.actionsLeft > 0) {
-                    this.actionsLeft--;
-                    this.drawCard(1);
-                    this.updateUI();
-                }
+        this.deckText.on("pointerdown", () => {
+            if (this.actionsLeft > 0) {
+                this.actionsLeft--;
+                this.drawCard(1);
             }
-        );
-        this.deckText = deckBtn.text;
-        this.uiElements.push(deckBtn.button, deckBtn.text);
+        });
 
-        // 下部パネル（手札エリアの背景）
-        const handPanel = UIHelper.createPanel(this, 10, height - 180, width - 20, 130);
-        this.uiElements.push(handPanel);
+        // ターン情報
+        this.turnText = this.add.text(20, 20, "", {
+            fontSize: "20px",
+            color: "#ffffff"
+        });
 
-        // エンドターンボタン（最下部）
-        const endTurnBtn = UIHelper.createButton(
-            this,
-            width / 2,
-            height - 30,
-            150,
-            50,
-            "ターン終了",
-            () => this.endTurn()
-        );
-        this.endTurnButton = endTurnBtn.button;
-        this.endTurnText = endTurnBtn.text;
-        this.uiElements.push(endTurnBtn.button, endTurnBtn.text);
+        // エンドターンボタン
+        const endBtn = this.add.text(width - 140, height - 50, "END TURN", {
+            fontSize: "22px",
+            backgroundColor: "#550000",
+            padding: { x: 10, y: 5 }
+        }).setInteractive();
 
-        // 勝敗表示用
-        if (!this.resultText) {
-            this.resultText = this.add.text(width/2, height/2, "", {
-                fontSize: "36px",
-                color: "#ffff00",
-                backgroundColor: "#000000",
-                padding: { x: 30, y: 20 }
-            }).setOrigin(0.5).setVisible(false).setDepth(2000);
-        } else {
-            this.resultText.setPosition(width/2, height/2);
-        }
+        endBtn.on("pointerdown", () => this.endTurn());
 
-        this.endTurnButton.setDepth(1000);
-this.endTurnText.setDepth(1001);
-this.deckText.setDepth(1001);
-        
         this.updateUI();
     }
 
+    // -------------------------
+    // UI更新
+    // -------------------------
     updateUI() {
-        this.enemyText.setText("敵 HP: " + this.enemyHP);
-        this.turnText.setText("ターン: " + this.turn + "\n行動: " + this.actionsLeft);
-        this.deckText.setText("山札\n" + this.deck.length);
+        this.enemyText.setText("Enemy HP: " + this.enemyLife);
+        this.turnText.setText("Turn: " + this.turn + "\nActions: " + this.actionsLeft);
+        this.deckText.setText("Deck\n" + this.deck.length);
     }
 
-    // =========================
+    // -------------------------
     // ドロー
-    // =========================
+    // -------------------------
+    drawCard(count = 1) {
 
-    drawCard(num) {
+        for (let i = 0; i < count; i++) {
 
-        for (let i = 0; i < num; i++) {
+            if (this.hand.length >= 4) break;
+            if (this.deck.length === 0) break;
 
-            if (this.deck.length === 0) return;
-            if (this.hand.length >= 6) return;
-
-            const card = this.deck.shift();
+            const card = this.deck.pop();
             this.hand.push(card);
         }
 
@@ -170,192 +115,213 @@ this.deckText.setDepth(1001);
         this.updateUI();
     }
 
-    // =========================
-    // 召喚
-    // =========================
-
-    summon(card) {
-
-        if (this.gameOver) return;
-        if (this.actionsLeft <= 0) return;
-
-        this.actionsLeft--;
-
-        const index = this.hand.indexOf(card);
-        if (index !== -1) {
-            this.hand.splice(index, 1);
-            this.field.push(card);
-        }
-
-        this.renderAll();
-        this.updateUI();
-    }
-
-    // =========================
-    // 攻撃
-    // =========================
-
-    attack(card) {
-
-        if (this.gameOver) return;
-        if (this.actionsLeft <= 0) return;
-
-        this.actionsLeft--;
-        this.enemyHP -= card.attack;
-
-        if (this.enemyHP < 0) this.enemyHP = 0;
-
-        const index = this.field.indexOf(card);
-        if (index !== -1) {
-            this.field.splice(index, 1);
-            this.usedCards.push(card);
-        }
-
-        this.updateUI();
-        this.renderAll();
-
-        if (this.enemyHP === 0) {
-            this.showResult("勝利！");
-        }
-    }
-
-    // =========================
-    // 勝敗表示
-    // =========================
-
-    showResult(message) {
-        this.gameOver = true;
-        this.resultText.setText(message).setVisible(true);
-    }
-
-    // =========================
-    // ターン終了
-    // =========================
-
-    endTurn() {
-        if (this.gameOver) return;
-        
-        this.turn++;
-        this.actionsLeft = 4;
-        this.drawCard(2);
-        this.updateUI();
-    }
-
-    // =========================
-    // 描画
-    // =========================
-
-    renderAll() {
-        this.renderHand();
-        this.renderField();
-    }
-
+    // -------------------------
+    // 手札描画
+    // -------------------------
     renderHand() {
 
         if (this.handSprites) this.handSprites.forEach(s => s.destroy());
-        if (this.handTexts) this.handTexts.forEach(t => t.destroy());
         this.handSprites = [];
-        this.handTexts = [];
 
-        const width = this.cameras.main.width;
-        const height = this.cameras.main.height;
-
-        // 手札エリア（下部パネル内）
-        const y = height - 115;
-        const cardWidth = Math.min(65, width * 0.15);
-        const cardHeight = cardWidth * 1.4;
-        const spacing = Math.min(70, width * 0.17);
-        const startX = width/2 - ((this.hand.length - 1) * spacing) / 2;
+        const startX = 300;
+        const y = 500;
 
         this.hand.forEach((card, index) => {
 
-            const x = startX + index * spacing;
-
-            // カード背景
-            const cardBg = this.add.rectangle(x, y, cardWidth + 4, cardHeight + 4, 0xffffff)
-                .setStrokeStyle(2, 0x00ff00);
-            this.handSprites.push(cardBg);
-
-            const sprite = this.add.image(x, y, card.key)
-                .setDisplaySize(cardWidth, cardHeight)
+            const sprite = this.add.image(startX + index * 150, y, card.key)
+                .setScale(0.5)
                 .setInteractive();
 
             sprite.on("pointerdown", () => this.summon(card));
 
-            const attackText = this.add.text(x, y + cardHeight/2 - 8, "ATK " + card.attack, {
-                fontSize: "12px",
-                color: "#000000",
-                backgroundColor: "#ffff00",
-                padding: { x: 6, y: 3 },
-                fontStyle: "bold"
-            }).setOrigin(0.5);
-
             this.handSprites.push(sprite);
-            this.handTexts.push(attackText);
         });
     }
 
+    // -------------------------
+    // 召喚
+    // -------------------------
+    summon(cardData) {
+
+        if (this.actionsLeft <= 0) return;
+        if (this.field.length >= 4) return;
+
+        this.actionsLeft--;
+
+        this.hand.splice(this.hand.indexOf(cardData), 1);
+
+        // 召喚ターンは攻撃不可
+        cardData.hasAttacked = true;
+
+        this.field.push(cardData);
+
+        this.renderHand();
+        this.renderField();
+        this.updateUI();
+    }
+
+    // -------------------------
+    // フィールド描画
+    // -------------------------
     renderField() {
 
         if (this.fieldSprites) this.fieldSprites.forEach(s => s.destroy());
-        if (this.fieldTexts) this.fieldTexts.forEach(t => t.destroy());
         this.fieldSprites = [];
-        this.fieldTexts = [];
+
+        const startX = 300;
+        const y = 350;
+
+        this.field.forEach((card, index) => {
+
+            const sprite = this.add.image(startX + index * 150, y, card.key)
+                .setScale(0.6)
+                .setInteractive();
+
+            sprite.on("pointerdown", () => this.attack(card, sprite));
+
+            this.fieldSprites.push(sprite);
+        });
+    }
+
+    // -------------------------
+    // 攻撃
+    // -------------------------
+    attack(cardData, cardSprite) {
+
+        if (this.actionsLeft <= 0) return;
+        if (cardData.hasAttacked) return;
+
+        this.actionsLeft--;
+        cardData.hasAttacked = true;
+
+        this.enemyLife -= cardData.attack;
+        this.updateUI();
+
+        this.playAttackAnimation(cardSprite, cardData.attack);
+
+        if (this.enemyLife <= 0) {
+            this.time.delayedCall(1000, () => {
+                this.showTurnBanner("VICTORY", "YOU WIN");
+            });
+        }
+    }
+
+    // -------------------------
+    // ターン終了
+    // -------------------------
+    endTurn() {
+
+        this.turn++;
+        this.actionsLeft = 4;
+
+        this.field.forEach(card => {
+            card.hasAttacked = false;
+        });
+
+        this.updateUI();
+        this.showTurnBanner("TURN " + this.turn, "START");
+    }
+
+    // -------------------------
+    // ATTACK演出
+    // -------------------------
+    playAttackAnimation(cardSprite, damage) {
 
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        // フィールドエリア（中央）
-        const y = height * 0.4;
-        const cardWidth = Math.min(75, width * 0.18);
-        const cardHeight = cardWidth * 1.4;
-        const spacing = Math.min(85, width * 0.2);
-        const startX = width/2 - ((this.field.length - 1) * spacing) / 2;
+        this.input.enabled = false;
 
-        this.field.forEach((card, index) => {
+        this.tweens.add({
+            targets: cardSprite,
+            y: cardSprite.y - 40,
+            duration: 150,
+            yoyo: true
+        });
 
-            const x = startX + index * spacing;
+        const flash = this.add.rectangle(0, 0, width, height, 0xffffff, 0.2)
+            .setOrigin(0);
 
-            // カード背景
-            const cardBg = this.add.rectangle(x, y, cardWidth + 4, cardHeight + 4, 0xffffff)
-                .setStrokeStyle(2, 0xff0000);
-            this.fieldSprites.push(cardBg);
+        this.tweens.add({
+            targets: flash,
+            alpha: 0,
+            duration: 200,
+            onComplete: () => flash.destroy()
+        });
 
-            const sprite = this.add.image(x, y, card.key)
-                .setDisplaySize(cardWidth, cardHeight)
-                .setInteractive();
+        this.showTurnBanner("ATTACK", "-" + damage);
 
-            sprite.on("pointerdown", () => this.attack(card));
+        const dmgText = this.add.text(width / 2, height / 2 - 100, "-" + damage, {
+            fontSize: "60px",
+            color: "#ff3333",
+            fontStyle: "bold"
+        }).setOrigin(0.5);
 
-            const attackText = this.add.text(x, y + cardHeight/2 - 8, "ATK " + card.attack, {
-                fontSize: "13px",
-                color: "#ffffff",
-                backgroundColor: "#ff0000",
-                padding: { x: 7, y: 3 },
-                fontStyle: "bold"
-            }).setOrigin(0.5);
+        this.tweens.add({
+            targets: dmgText,
+            y: dmgText.y - 60,
+            alpha: 0,
+            duration: 800,
+            onComplete: () => {
+                dmgText.destroy();
+                this.input.enabled = true;
+            }
+        });
+    }
 
-            this.fieldSprites.push(sprite);
-            this.fieldTexts.push(attackText);
+    // -------------------------
+    // ターンバナー
+    // -------------------------
+    showTurnBanner(mainText, subText) {
+
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+
+        const dim = this.add.rectangle(0, 0, width, height, 0x000000, 0.4)
+            .setOrigin(0);
+
+        const bar = this.add.rectangle(width/2, height/2, width, 140, 0x000000, 0.75);
+
+        const title = this.add.text(width/2, height/2 - 20, mainText, {
+            fontSize: "64px",
+            fontStyle: "bold",
+            color: "#ffffff"
+        }).setOrigin(0.5);
+
+        const subtitle = this.add.text(width/2, height/2 + 35, subText, {
+            fontSize: "24px",
+            color: "#cccccc"
+        }).setOrigin(0.5);
+
+        const container = this.add.container(0, 0, [dim, bar, title, subtitle]);
+
+        container.setAlpha(0);
+        container.setScale(0.8);
+
+        this.tweens.add({
+            targets: container,
+            alpha: 1,
+            scale: 1,
+            duration: 300,
+            ease: "Back.Out",
+            onComplete: () => {
+                this.time.delayedCall(1000, () => {
+                    this.tweens.add({
+                        targets: container,
+                        alpha: 0,
+                        duration: 400,
+                        onComplete: () => container.destroy()
+                    });
+                });
+            }
         });
     }
 }
 
-
-// =========================
-// ゲーム設定（レスポンシブ対応）
-// =========================
-
 const config = {
     type: Phaser.AUTO,
-    scale: {
-        mode: Phaser.Scale.FIT,
-        parent: 'game',
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 390,
-        height: 844
-    },
-    backgroundColor: "#1e1e2f",
+    width: 1000,
+    height: 600,
     scene: MainScene
 };
 
