@@ -292,9 +292,18 @@ class MainScene extends Phaser.Scene {
 
     this.isGameOver = true;
 
-    this.time.delayedCall(500, () => {
-        this.showTurnBanner("VICTORY", "YOU WIN");
-    });
+     this.add.rectangle(800, 450, 1600, 900, 0x000000, 0.6);
+
+        // Victoryテキスト
+        this.add.text(800, 450, "VICTORY", {
+            fontSize: "96px",
+            color: "#ffff00",
+            fontStyle: "bold"
+        }).setOrigin(0.5);
+
+        // 操作停止
+        this.actionsLeft = 0;
+        this.input.enabled = false;
 }
     }
 
