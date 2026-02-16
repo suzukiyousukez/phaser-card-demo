@@ -193,7 +193,8 @@ class MainScene extends Phaser.Scene {
 
     this.hand.splice(this.hand.indexOf(cardData), 1);
 
-    cardData.hasAttacked = true;   // ← ここ重要（出したターンは攻撃済扱い）
+    // 出したターンは攻撃不可
+    cardData.hasAttacked = true;
 
     this.field.push(cardData);
 
@@ -235,21 +236,20 @@ class MainScene extends Phaser.Scene {
     attack(cardData, cardSprite) {
 
     if (this.actionsLeft <= 0) return;
+
+    // ここが超重要
     if (cardData.hasAttacked) return;
 
     this.actionsLeft--;
+
     cardData.hasAttacked = true;
 
     this.enemyLife -= cardData.attack;
     this.updateUI();
 
     this.playAttackAnimation(cardSprite, cardData.attack);
+}
 
-    if (this.enemyLife <= 0) {
-        this.time.delayedCall(1000, () => {
-            this.showTurnBanner("VICTORY", "YOU WIN");
-        });
-    }
 }
 
 
@@ -308,7 +308,9 @@ class MainScene extends Phaser.Scene {
     this.turn++;
     this.actionsLeft = 4;
 
-    this.field.forEach(card => card.hasAttacked = false);
+    this.field.forEach(card => {
+        card.hasAttacked = false;
+    });
 
     this.updateUI();
     this.showTurnBanner("TURN " + this.turn, "START");
