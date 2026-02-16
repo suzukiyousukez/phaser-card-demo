@@ -21,6 +21,8 @@ class MainScene extends Phaser.Scene {
     this.createDeck();      // ← 先にデッキ作る
     this.createLayout();    // ← そのあとUI作る
     this.drawCard(4);
+    this.showTurnBanner("TURN " + this.turn, "DRAW");
+
 }
 
 
@@ -100,6 +102,61 @@ class MainScene extends Phaser.Scene {
 
     this.renderHand();
     this.updateUI();
+}
+
+    showTurnBanner(mainText, subText) {
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // 画面暗転レイヤー
+    const dim = this.add.rectangle(0, 0, width, height, 0x000000, 0.4)
+        .setOrigin(0);
+
+    // 横帯
+    const bar = this.add.rectangle(width/2, height/2, width, 140, 0x000000, 0.75);
+
+    bar.setStrokeStyle(2, 0xffd700);
+
+    // メインテキスト
+    const title = this.add.text(width/2, height/2 - 20, mainText, {
+        fontSize: "64px",
+        fontStyle: "bold",
+        color: "#ffffff"
+    }).setOrigin(0.5);
+
+    // サブテキスト
+    const subtitle = this.add.text(width/2, height/2 + 35, subText, {
+        fontSize: "24px",
+        color: "#cccccc"
+    }).setOrigin(0.5);
+
+    const container = this.add.container(0, 0, [dim, bar, title, subtitle]);
+
+    container.setAlpha(0);
+    container.setScale(0.8);
+
+    this.tweens.add({
+        targets: container,
+        alpha: 1,
+        scale: 1,
+        duration: 300,
+        ease: "Back.Out",
+        onComplete: () => {
+
+            this.time.delayedCall(1000, () => {
+
+                this.tweens.add({
+                    targets: container,
+                    alpha: 0,
+                    duration: 400,
+                    onComplete: () => container.destroy()
+                });
+
+            });
+
+        }
+    });
 }
 
 
@@ -189,12 +246,16 @@ class MainScene extends Phaser.Scene {
     }
 
     endTurn() {
-        this.turn++;
-        this.actionsLeft = 4;
 
-        this.field.forEach(card => card.hasAttacked = false);
-        this.updateUI();
-    }
+    this.turn++;
+    this.actionsLeft = 4;
+
+    this.field.forEach(card => card.hasAttacked = false);
+
+    this.updateUI();
+
+    this.showTurnBanner("TURN " + this.turn, "START");
+}
 }
 
 const config = {
