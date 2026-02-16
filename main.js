@@ -301,6 +301,8 @@ class MainScene extends Phaser.Scene {
             fontStyle: "bold"
         }).setOrigin(0.5);
 
+            victoryText.setDepth(1);
+            
         // 操作停止
         this.actionsLeft = 0;
         this.input.enabled = false;
