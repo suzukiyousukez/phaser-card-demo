@@ -82,20 +82,20 @@ class MainScene extends Phaser.Scene {
             strokeThickness: 4
         }).setOrigin(0.5);
 
-        this.add.text(width/2, 65, "ENEMY HP", {
+        this.add.text(width/2, 65, "敵 HP", {
     fontSize: "14px",
     color: "#cccccc"
 }).setOrigin(0.5);
 
         const y = height * 0.45;
-        this.add.text(width/2, height * 0.32, "FIELD", {
+        this.add.text(width/2, height * 0.32, "フィールド", {
     fontSize: "16px",
     color: "#ffffff"
 }).setOrigin(0.5);
 
 
         const y2 = height - 160;
-        this.add.text(width/2, height - 220, "HAND", {
+        this.add.text(width/2, height - 220, "手札", {
     fontSize: "16px",
     color: "#ffffff"
 }).setOrigin(0.5);
@@ -128,7 +128,7 @@ class MainScene extends Phaser.Scene {
         });
 
         // エンドターン
-        const endBtn = this.add.text(width/2, height - 30, "END TURN", {
+        const endBtn = this.add.text(width/2, height - 30, "次のターン", {
             fontSize: "24px",
             color: "#ffffff",
             backgroundColor: "#cc0000",
@@ -160,8 +160,8 @@ class MainScene extends Phaser.Scene {
         }
 
         this.enemyText.setText(this.enemyLife + " / " + this.enemyMaxLife);
-        this.turnText.setText("Turn: " + this.turn + "\nActions: " + this.actionsLeft);
-        this.deckText.setText("Deck: " + this.deck.length);
+        this.turnText.setText("ターン数: " + this.turn + "\n行動: " + this.actionsLeft);
+        this.deckText.setText("デッキ: " + this.deck.length);
 
         // デッキ押せるかどうか視覚化
         if (this.actionsLeft <= 0 || this.hand.length >= 4 || this.deck.length <= 0) {
