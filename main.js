@@ -122,7 +122,8 @@ class MainScene extends Phaser.Scene {
     if (this.handSprites) this.handSprites.forEach(s => s.destroy());
     this.handSprites = [];
 
-    const y = 650;
+    const height = this.cameras.main.height;
+const y = height * 0.8;
     const startX = 60;
 
     this.hand.forEach((card, index) => {
@@ -168,7 +169,9 @@ class MainScene extends Phaser.Scene {
     if (this.fieldSprites) this.fieldSprites.forEach(s => s.destroy());
     this.fieldSprites = [];
 
-    const y = 250;
+    const height = this.cameras.main.height;
+const y = height * 0.45;
+
 const startX = 60;
 
     this.field.forEach((card, index) => {
