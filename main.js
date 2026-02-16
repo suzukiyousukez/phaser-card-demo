@@ -4,7 +4,7 @@ class MainScene extends Phaser.Scene {
     }
 
     preload() {
-        for (let i = 1; i <= 5; i++) {
+        for (let i = 1; i <= 20; i++) {
             this.load.image("card" + i, "assets/card" + i + ".jpg");
         }
     }
@@ -32,15 +32,21 @@ class MainScene extends Phaser.Scene {
     // デッキ生成
     // =========================
     createDeck() {
-        for (let i = 0; i < 20; i++) {
-            this.deck.push({
-                key: "card" + Phaser.Math.Between(1, 5),
-                attack: Phaser.Math.Between(1, 5),
-                hasAttacked: false
-            });
-        }
-        Phaser.Utils.Array.Shuffle(this.deck);
-    }
+
+    this.deck = [];
+
+    CARD_DATA.forEach(card => {
+
+        this.deck.push({
+            ...card,
+            hasAttacked: false
+        });
+
+    });
+
+    Phaser.Utils.Array.Shuffle(this.deck);
+}
+
 
     // =========================
     // UI作成
