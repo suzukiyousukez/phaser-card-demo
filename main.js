@@ -87,6 +87,19 @@ class MainScene extends Phaser.Scene {
     color: "#cccccc"
 }).setOrigin(0.5);
 
+        const y = height * 0.45;
+        this.add.text(width/2, height * 0.32, "FIELD", {
+    fontSize: "16px",
+    color: "#ffffff"
+}).setOrigin(0.5);
+
+
+        const y2 = height - 160;
+        this.add.text(width/2, height - 220, "HAND", {
+    fontSize: "16px",
+    color: "#ffffff"
+}).setOrigin(0.5);
+
         
         // ターン情報
         this.turnText = this.add.text(20, 20, "", {
