@@ -10,6 +10,7 @@ class MainScene extends Phaser.Scene {
     }
 
     create() {
+console.log("create start");
 
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
