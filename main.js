@@ -93,7 +93,7 @@ class MainScene extends Phaser.Scene {
     color: "#ffffff"
 }).setOrigin(0.5);
 
-        const y = height - 160;
+        const y2 = height - 160;
         this.add.text(width/2, height - 220, "HAND", {
     fontSize: "16px",
     color: "#ffffff"
