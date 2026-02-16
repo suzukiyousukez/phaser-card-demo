@@ -45,48 +45,47 @@ class MainScene extends Phaser.Scene {
     // -------------------------
     createLayout() {
 
-        const width = this.cameras.main.width;
-        const height = this.cameras.main.height;
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
 
-        this.add.rectangle(width/2, height/2, width, height, 0x1e1e2f);
+    // 敵HP（上）
+    this.enemyText = this.add.text(width/2, 40, "", {
+        fontSize: "22px",
+        color: "#ffffff"
+    }).setOrigin(0.5);
 
-        // 敵HP表示
-        this.enemyText = this.add.text(width/2, 40, "", {
-            fontSize: "24px",
-            color: "#ffffff"
-        }).setOrigin(0.5);
+    // 山札（右上）
+    this.deckText = this.add.text(width - 60, 100, "", {
+        fontSize: "16px",
+        backgroundColor: "#000",
+        padding: { x: 8, y: 5 }
+    }).setOrigin(0.5).setInteractive();
 
-        // 山札
-        this.deckText = this.add.text(width - 100, height/2, "", {
-            fontSize: "20px",
-            color: "#ffffff",
-            backgroundColor: "#000"
-        }).setPadding(10).setInteractive();
+    this.deckText.on("pointerdown", () => {
+        if (this.actionsLeft > 0) {
+            this.actionsLeft--;
+            this.drawCard(1);
+        }
+    });
 
-        this.deckText.on("pointerdown", () => {
-            if (this.actionsLeft > 0) {
-                this.actionsLeft--;
-                this.drawCard(1);
-            }
-        });
+    // ターン情報（左上）
+    this.turnText = this.add.text(20, 90, "", {
+        fontSize: "16px",
+        color: "#ffffff"
+    });
 
-        // ターン情報
-        this.turnText = this.add.text(20, 20, "", {
-            fontSize: "20px",
-            color: "#ffffff"
-        });
+    // エンドターン（下）
+    this.endBtn = this.add.text(width/2, height - 40, "END TURN", {
+        fontSize: "20px",
+        backgroundColor: "#550000",
+        padding: { x: 20, y: 8 }
+    }).setOrigin(0.5).setInteractive();
 
-        // エンドターンボタン
-        const endBtn = this.add.text(width - 140, height - 50, "END TURN", {
-            fontSize: "22px",
-            backgroundColor: "#550000",
-            padding: { x: 10, y: 5 }
-        }).setInteractive();
+    this.endBtn.on("pointerdown", () => this.endTurn());
 
-        endBtn.on("pointerdown", () => this.endTurn());
+    this.updateUI();
+}
 
-        this.updateUI();
-    }
 
     // -------------------------
     // UI更新
@@ -123,14 +122,14 @@ class MainScene extends Phaser.Scene {
     if (this.handSprites) this.handSprites.forEach(s => s.destroy());
     this.handSprites = [];
 
-    const startX = 300;
-    const y = 500;
+    const y = 650;
+    const startX = 60;
 
     this.hand.forEach((card, index) => {
 
-        const sprite = this.add.image(startX + index * 170, y, card.key)
-            .setDisplaySize(120, 170)   // ← 固定サイズ
-            .setInteractive();
+        const sprite = this.add.image(startX + index * 80, y, card.key)
+    .setDisplaySize(70, 100)
+    .setInteractive();
 
         sprite.on("pointerdown", () => this.summon(card));
 
@@ -169,13 +168,13 @@ class MainScene extends Phaser.Scene {
     if (this.fieldSprites) this.fieldSprites.forEach(s => s.destroy());
     this.fieldSprites = [];
 
-    const startX = 300;
-    const y = 350;
+    const y = 250;
+const startX = 60;
 
     this.field.forEach((card, index) => {
 
-        const sprite = this.add.image(startX + index * 170, y, card.key)
-            .setDisplaySize(140, 200)  // ← 少し大きめ
+        const sprite = this.add.image(startX + index * 80, y, card.key)
+            .setDisplaySize(70, 100)  // ← 少し大きめ
             .setInteractive();
 
         sprite.on("pointerdown", () => this.attack(card, sprite));
@@ -321,9 +320,11 @@ class MainScene extends Phaser.Scene {
 
 const config = {
     type: Phaser.AUTO,
-    width: 1000,
-    height: 600,
+    width: 390,   // iPhone幅目安
+    height: 844,  // 縦長
+    backgroundColor: "#1e1e2f",
     scene: MainScene
 };
+
 
 new Phaser.Game(config);
