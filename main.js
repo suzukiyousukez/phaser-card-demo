@@ -295,13 +295,7 @@ class MainScene extends Phaser.Scene {
      this.add.rectangle(800, 450, 1600, 900, 0x000000, 0.6);
 
         // Victoryテキスト
-        this.add.text(800, 450, "VICTORY", {
-            fontSize: "96px",
-            color: "#ffff00",
-            fontStyle: "bold"
-        }).setOrigin(0.5);
-
-            victoryText.setDepth(1);
+        this.showTurnBanner("VICTORY", "YOU WIN");
             
         // 操作停止
         this.actionsLeft = 0;
