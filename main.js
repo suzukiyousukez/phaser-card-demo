@@ -185,18 +185,23 @@ class MainScene extends Phaser.Scene {
     }
 
     summon(cardData) {
-        if (this.actionsLeft <= 0) return;
-        if (this.field.length >= 4) return;
 
-        this.actionsLeft--;
-        this.hand.splice(this.hand.indexOf(cardData), 1);
-        cardData.hasAttacked = false;
-        this.field.push(cardData);
+    if (this.actionsLeft <= 0) return;
+    if (this.field.length >= 4) return;
 
-        this.updateUI();
-        this.renderHand();
-        this.renderField();
-    }
+    this.actionsLeft--;
+
+    this.hand.splice(this.hand.indexOf(cardData), 1);
+
+    cardData.hasAttacked = true;   // ← ここ重要（出したターンは攻撃済扱い）
+
+    this.field.push(cardData);
+
+    this.updateUI();
+    this.renderHand();
+    this.renderField();
+}
+
 
     renderField() {
         if (this.fieldSprites) this.fieldSprites.forEach(s => s.destroy());
@@ -306,9 +311,7 @@ class MainScene extends Phaser.Scene {
     this.field.forEach(card => card.hasAttacked = false);
 
     this.updateUI();
-
     this.showTurnBanner("TURN " + this.turn, "START");
-}
 }
 
 const config = {
