@@ -227,24 +227,77 @@ class MainScene extends Phaser.Scene {
         });
     }
 
-    attack(cardData) {
-        if (this.actionsLeft <= 0) return;
-        if (cardData.hasAttacked) return;
+    attack(cardData, cardSprite) {
 
-        this.actionsLeft--;
-        cardData.hasAttacked = true;
-        this.enemyLife -= cardData.attack;
+    if (this.actionsLeft <= 0) return;
+    if (cardData.hasAttacked) return;
 
-        this.updateUI();
+    this.actionsLeft--;
+    cardData.hasAttacked = true;
 
-        if (this.enemyLife <= 0) {
-            this.add.text(300, 300, "VICTORY", {
-                fontSize: "60px",
-                color: "#22c55e"
-            });
-        }
+    this.enemyLife -= cardData.attack;
+    this.updateUI();
+
+    this.playAttackAnimation(cardSprite, cardData.attack);
+
+    if (this.enemyLife <= 0) {
+        this.time.delayedCall(1000, () => {
+            this.showTurnBanner("VICTORY", "YOU WIN");
+        });
     }
+}
 
+
+    playAttackAnimation(cardSprite, damage) {
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // 入力一時停止
+    this.input.enabled = false;
+
+    // ① カードを前に出す
+    this.tweens.add({
+        targets: cardSprite,
+        y: cardSprite.y - 40,
+        duration: 150,
+        yoyo: true
+    });
+
+    // ② 画面フラッシュ
+    const flash = this.add.rectangle(0, 0, width, height, 0xffffff, 0.2)
+        .setOrigin(0);
+
+    this.tweens.add({
+        targets: flash,
+        alpha: 0,
+        duration: 200,
+        onComplete: () => flash.destroy()
+    });
+
+    // ③ ATTACKバナー
+    this.showTurnBanner("ATTACK", "-" + damage);
+
+    // ④ ダメージ数字ポップ
+    const dmgText = this.add.text(width / 2, height / 2 - 120, "-" + damage, {
+        fontSize: "60px",
+        color: "#ff3333",
+        fontStyle: "bold"
+    }).setOrigin(0.5);
+
+    this.tweens.add({
+        targets: dmgText,
+        y: dmgText.y - 60,
+        alpha: 0,
+        duration: 800,
+        onComplete: () => {
+            dmgText.destroy();
+            this.input.enabled = true;
+        }
+    });
+}
+
+    
     endTurn() {
 
     this.turn++;
