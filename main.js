@@ -10,23 +10,19 @@ class MainScene extends Phaser.Scene {
     }
 
     create() {
-console.log("create start");
 
-        const width = this.cameras.main.width;
-        const height = this.cameras.main.height;
+    this.turn = 1;
+    this.actionsLeft = 4;
+    this.enemyLife = 40;
 
-        // ===== 状態 =====
-        this.turn = 1;
-        this.actionsLeft = 4;
-        this.enemyLife = 40;
+    this.hand = [];
+    this.field = [];
 
-        this.hand = [];
-        this.field = [];
+    this.createDeck();      // ← 先にデッキ作る
+    this.createLayout();    // ← そのあとUI作る
+    this.drawCard(4);
+}
 
-        this.createLayout();
-        this.createDeck();
-        this.drawCard(4);
-    }
 
     createLayout() {
         const width = this.cameras.main.width;
