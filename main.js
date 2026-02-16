@@ -289,11 +289,6 @@ class MainScene extends Phaser.Scene {
         this.playAttackAnimation(cardSprite, cardData.attack);
 
         if (this.enemyLife <= 0) {
-            this.time.delayedCall(1000, () => {
-                this.showTurnBanner("VICTORY", "YOU WIN");
-            });
-        }
-        if (this.enemyLife <= 0) {
 
     this.isGameOver = true;
 
