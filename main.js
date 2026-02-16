@@ -57,9 +57,12 @@ class MainScene extends Phaser.Scene {
 
       let x = centerX + (index - 1.5) * spacing;
 
-      let card = this.add.image(x, y, cardKey)
-        .setScale(0.6)
-        .setInteractive();
+      let card = this.add.image(x, y, cardKey);
+
+let targetHeight = 180;
+let scale = targetHeight / card.height;
+
+card.setScale(scale);
 
       card.cardIndex = index;
 
