@@ -122,8 +122,7 @@ class MainScene extends Phaser.Scene {
     if (this.handSprites) this.handSprites.forEach(s => s.destroy());
     this.handSprites = [];
 
-    const height = this.cameras.main.height;
-const y = height * 0.8;
+    const y = this.cameras.main.height * 0.8;
     const startX = 60;
 
     this.hand.forEach((card, index) => {
