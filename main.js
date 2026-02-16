@@ -10,131 +10,163 @@ class MainScene extends Phaser.Scene {
   }
 
   create() {
-    this.gameState = "DRAW";
-    this.turn = 1;
-
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // ===== ターン表示 =====
-    this.add.text(20, 20, `${this.turn}ターン目`, {
+    // ===== プレイヤー状態 =====
+    this.actionsLeft = 4;
+    this.playerLife = 20;
+    this.enemyLife = 40;
+
+    this.gameState = "PLAYER_TURN";
+
+    // ===== 表示 =====
+    this.enemyLifeText = this.add.text(width / 2 - 60, 40, `敵ライフ: ${this.enemyLife}`, {
       fontSize: "28px",
+      color: "#ff4444"
+    });
+
+    this.actionText = this.add.text(20, 20, `行動回数: ${this.actionsLeft}`, {
+      fontSize: "24px",
       color: "#ffffff"
     });
 
-    // ===== デッキ作成 =====
+    // ===== デッキ =====
     this.deck = [];
     for (let i = 0; i < 20; i++) {
-      let r = Phaser.Math.Between(1, 5);
-      this.deck.push("card" + r);
+      this.deck.push({
+        key: "card" + Phaser.Math.Between(1, 5),
+        attack: Phaser.Math.Between(3, 8),
+        hasAttacked: false
+      });
     }
+
     Phaser.Utils.Array.Shuffle(this.deck);
 
-    this.graveyard = [];
-
-    // ===== 山札表示 =====
-    this.deckZone = this.add.rectangle(width - 120, 80, 80, 120, 0x4444aa)
-      .setStrokeStyle(2, 0xffffff);
-    this.deckText = this.add.text(width - 155, 40, `山札\n${this.deck.length}`, {
-      fontSize: "18px",
-      align: "center"
-    });
-
-    // ===== 墓地表示 =====
-    this.graveZone = this.add.rectangle(width - 240, 80, 80, 120, 0x333333)
-      .setStrokeStyle(2, 0xffffff);
-    this.graveText = this.add.text(width - 275, 40, `墓地\n0`, {
-      fontSize: "18px",
-      align: "center"
-    });
-
-    // ===== フィールド4枠 =====
-    this.fieldSlots = [];
-    const spacing = 160;
-    const centerX = width / 2;
-
-    for (let i = 0; i < 4; i++) {
-      let x = centerX + (i - 1.5) * spacing;
-      let slot = this.add.rectangle(x, height / 2, 120, 160, 0x222222)
-        .setStrokeStyle(2, 0xffffff);
-      this.fieldSlots.push({ x, y: height / 2, occupied: false });
-    }
-
-    // ===== 手札 =====
     this.hand = [];
-    this.handSprites = [];
+    this.field = [];
 
-    this.drawCards(4);
+    this.drawCard(4);
   }
 
-  drawCards(num) {
+  updateActionText() {
+    this.actionText.setText(`行動回数: ${this.actionsLeft}`);
+  }
+
+  drawCard(num = 1) {
+    if (this.actionsLeft <= 0) return;
+
     for (let i = 0; i < num; i++) {
-      if (this.deck.length <= 0) break;
+      if (this.deck.length === 0) return;
       this.hand.push(this.deck.pop());
     }
 
-    this.deckText.setText(`山札\n${this.deck.length}`);
-    this.showHand();
-    this.gameState = "PLAYER_TURN";
+    this.actionsLeft--;
+    this.updateActionText();
+    this.renderHand();
   }
 
-  showHand() {
+  renderHand() {
+    if (this.handSprites) {
+      this.handSprites.forEach(s => s.destroy());
+    }
+
+    this.handSprites = [];
+
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
-    const spacing = 160;
+    const spacing = 150;
 
-    this.hand.forEach((cardKey, index) => {
+    this.hand.forEach((card, index) => {
 
       let x = width / 2 + (index - (this.hand.length - 1) / 2) * spacing;
       let y = height - 120;
 
-      let card = this.add.image(x, y, cardKey);
+      let sprite = this.add.image(x, y, card.key);
+      let scale = 150 / sprite.height;
+      sprite.setScale(scale);
 
-      // 高さ統一
-      let targetHeight = 160;
-      let scale = targetHeight / card.height;
-      card.setScale(scale);
+      sprite.setInteractive();
 
-      card.setInteractive();
-      card.cardIndex = index;
-
-      card.on("pointerdown", () => {
+      sprite.on("pointerdown", () => {
         this.summon(card);
       });
 
-      this.handSprites.push(card);
+      this.handSprites.push(sprite);
     });
   }
 
-  summon(selectedCard) {
-    if (this.gameState !== "PLAYER_TURN") return;
+  summon(cardData) {
+    if (this.actionsLeft <= 0) return;
+    if (this.field.length >= 4) return;
 
-    this.gameState = "ANIMATION";
+    this.actionsLeft--;
+    this.updateActionText();
 
-    // 空いてるフィールドを探す
-    let slot = this.fieldSlots.find(s => !s.occupied);
-    if (!slot) return;
+    this.hand.splice(this.hand.indexOf(cardData), 1);
 
-    slot.occupied = true;
+    cardData.hasAttacked = false;
+    this.field.push(cardData);
 
-    // 他カードロック
-    this.handSprites.forEach(c => c.disableInteractive());
+    this.renderHand();
+    this.renderField();
+  }
 
-    // フィールドへ移動
-    this.tweens.add({
-      targets: selectedCard,
-      x: slot.x,
-      y: slot.y,
-      scale: selectedCard.scale * 1.1,
-      duration: 400,
-      ease: "Power2",
-      onComplete: () => {
-        this.add.text(slot.x - 60, slot.y - 120, "召喚！", {
-          fontSize: "24px",
-          color: "#ffff00"
-        });
-      }
+  renderField() {
+    if (this.fieldSprites) {
+      this.fieldSprites.forEach(s => s.destroy());
+    }
+
+    this.fieldSprites = [];
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const spacing = 160;
+
+    this.field.forEach((card, index) => {
+
+      let x = width / 2 + (index - (this.field.length - 1) / 2) * spacing;
+      let y = height / 2;
+
+      let sprite = this.add.image(x, y, card.key);
+      let scale = 180 / sprite.height;
+      sprite.setScale(scale);
+
+      sprite.setInteractive();
+
+      sprite.on("pointerdown", () => {
+        this.attack(card);
+      });
+
+      // 攻撃力表示
+      this.add.text(x - 40, y + 70, `ATK:${card.attack}`, {
+        fontSize: "18px",
+        color: "#ffff00"
+      });
+
+      this.fieldSprites.push(sprite);
     });
+  }
+
+  attack(cardData) {
+    if (this.actionsLeft <= 0) return;
+    if (cardData.hasAttacked) return;
+
+    this.actionsLeft--;
+    this.updateActionText();
+
+    this.enemyLife -= cardData.attack;
+    cardData.hasAttacked = true;
+
+    this.enemyLifeText.setText(`敵ライフ: ${this.enemyLife}`);
+
+    if (this.enemyLife <= 0) {
+      this.add.text(250, 300, "勝利！", {
+        fontSize: "60px",
+        color: "#00ff00"
+      });
+      this.gameState = "END";
+    }
   }
 }
 
