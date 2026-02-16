@@ -60,57 +60,78 @@ class MainScene extends Phaser.Scene {
         const height = this.cameras.main.height;
 
         // 既存のUI要素を削除
-        if (this.enemyText) this.enemyText.destroy();
-        if (this.turnText) this.turnText.destroy();
-        if (this.deckText) this.deckText.destroy();
-        if (this.endBtn) this.endBtn.destroy();
+        if (this.uiElements) {
+            this.uiElements.forEach(element => {
+                if (element && element.destroy) element.destroy();
+            });
+        }
+        this.uiElements = [];
 
-        // 敵HP（上部中央）
-        this.enemyText = this.add.text(width/2, 30, "", {
-            fontSize: Math.max(18, width * 0.05) + "px",
+        // 上部パネル（敵情報エリア）
+        const topPanel = UIHelper.createPanel(this, 10, 10, width - 20, 80);
+        this.uiElements.push(topPanel);
+
+        // 敵HP表示
+        this.enemyText = this.add.text(width/2, 50, "", {
+            fontSize: "24px",
             color: "#ff6666",
             fontStyle: "bold"
         }).setOrigin(0.5);
+        this.uiElements.push(this.enemyText);
 
-        // ターン表示（左上）
-        this.turnText = this.add.text(15, 15, "", {
-            fontSize: Math.max(14, width * 0.038) + "px",
+        // 左上パネル（ターン情報）
+        const turnPanel = UIHelper.createPanel(this, 10, 100, 120, 70);
+        this.uiElements.push(turnPanel);
+
+        this.turnText = this.add.text(70, 135, "", {
+            fontSize: "14px",
             color: "#ffffff",
-            backgroundColor: "#333333",
-            padding: { x: 8, y: 5 }
-        });
+            align: "center"
+        }).setOrigin(0.5);
+        this.uiElements.push(this.turnText);
 
-        // デッキ（右上）
-        this.deckText = this.add.text(width - 15, 15, "", {
-            fontSize: Math.max(14, width * 0.038) + "px",
-            color: "#ffffff",
-            backgroundColor: "#0066cc",
-            padding: { x: 10, y: 5 }
-        }).setOrigin(1, 0).setInteractive();
-
-        this.deckText.on("pointerdown", () => {
-            if (this.gameOver) return;
-            if (this.actionsLeft > 0) {
-                this.actionsLeft--;
-                this.drawCard(1);
-                this.updateUI();
+        // 右上（デッキボタン）
+        const deckBtn = UIHelper.createButton(
+            this, 
+            width - 70, 
+            135, 
+            120, 
+            70, 
+            "", 
+            () => {
+                if (this.gameOver) return;
+                if (this.actionsLeft > 0) {
+                    this.actionsLeft--;
+                    this.drawCard(1);
+                    this.updateUI();
+                }
             }
-        });
+        );
+        this.deckText = deckBtn.text;
+        this.uiElements.push(deckBtn.button, deckBtn.text);
 
-        // エンドターンボタン（最下部・手札より下）
-        this.endBtn = this.add.text(width/2, height - 15, "ターン終了", {
-            fontSize: Math.max(18, width * 0.05) + "px",
-            color: "#ffffff",
-            backgroundColor: "#cc0000",
-            padding: { x: 30, y: 12 }
-        }).setOrigin(0.5).setInteractive().setDepth(1000);
+        // 下部パネル（手札エリアの背景）
+        const handPanel = UIHelper.createPanel(this, 10, height - 180, width - 20, 130);
+        this.uiElements.push(handPanel);
 
-        this.endBtn.on("pointerdown", () => this.endTurn());
+        // エンドターンボタン（最下部）
+        const endTurnBtn = UIHelper.createButton(
+            this,
+            width / 2,
+            height - 30,
+            150,
+            50,
+            "ターン終了",
+            () => this.endTurn()
+        );
+        this.endTurnButton = endTurnBtn.button;
+        this.endTurnText = endTurnBtn.text;
+        this.uiElements.push(endTurnBtn.button, endTurnBtn.text);
 
         // 勝敗表示用
         if (!this.resultText) {
             this.resultText = this.add.text(width/2, height/2, "", {
-                fontSize: Math.max(28, width * 0.08) + "px",
+                fontSize: "36px",
                 color: "#ffff00",
                 backgroundColor: "#000000",
                 padding: { x: 30, y: 20 }
@@ -124,8 +145,8 @@ class MainScene extends Phaser.Scene {
 
     updateUI() {
         this.enemyText.setText("敵 HP: " + this.enemyHP);
-        this.turnText.setText("ターン " + this.turn + "\n行動 " + this.actionsLeft);
-        this.deckText.setText("山札: " + this.deck.length);
+        this.turnText.setText("ターン: " + this.turn + "\n行動: " + this.actionsLeft);
+        this.deckText.setText("山札\n" + this.deck.length);
     }
 
     // =========================
@@ -237,26 +258,34 @@ class MainScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        // 手札エリア（下から60px上に配置してボタンと重ならないように）
-        const y = height - 110;
-        const cardWidth = Math.min(65, width * 0.16);
+        // 手札エリア（下部パネル内）
+        const y = height - 115;
+        const cardWidth = Math.min(65, width * 0.15);
         const cardHeight = cardWidth * 1.4;
-        const spacing = Math.min(75, width * 0.18);
+        const spacing = Math.min(70, width * 0.17);
         const startX = width/2 - ((this.hand.length - 1) * spacing) / 2;
 
         this.hand.forEach((card, index) => {
 
-            const sprite = this.add.image(startX + index * spacing, y, card.key)
+            const x = startX + index * spacing;
+
+            // カード背景
+            const cardBg = this.add.rectangle(x, y, cardWidth + 4, cardHeight + 4, 0xffffff)
+                .setStrokeStyle(2, 0x00ff00);
+            this.handSprites.push(cardBg);
+
+            const sprite = this.add.image(x, y, card.key)
                 .setDisplaySize(cardWidth, cardHeight)
                 .setInteractive();
 
             sprite.on("pointerdown", () => this.summon(card));
 
-            const attackText = this.add.text(startX + index * spacing, y + cardHeight/2 - 5, "ATK:" + card.attack, {
-                fontSize: Math.max(11, width * 0.03) + "px",
-                color: "#ffff00",
-                backgroundColor: "#000000",
-                padding: { x: 4, y: 2 }
+            const attackText = this.add.text(x, y + cardHeight/2 - 8, "ATK " + card.attack, {
+                fontSize: "12px",
+                color: "#000000",
+                backgroundColor: "#ffff00",
+                padding: { x: 6, y: 3 },
+                fontStyle: "bold"
             }).setOrigin(0.5);
 
             this.handSprites.push(sprite);
@@ -274,26 +303,34 @@ class MainScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        // フィールドエリア（画面中央）
-        const y = height * 0.35;
-        const cardWidth = Math.min(80, width * 0.2);
+        // フィールドエリア（中央）
+        const y = height * 0.4;
+        const cardWidth = Math.min(75, width * 0.18);
         const cardHeight = cardWidth * 1.4;
-        const spacing = Math.min(90, width * 0.22);
+        const spacing = Math.min(85, width * 0.2);
         const startX = width/2 - ((this.field.length - 1) * spacing) / 2;
 
         this.field.forEach((card, index) => {
 
-            const sprite = this.add.image(startX + index * spacing, y, card.key)
+            const x = startX + index * spacing;
+
+            // カード背景
+            const cardBg = this.add.rectangle(x, y, cardWidth + 4, cardHeight + 4, 0xffffff)
+                .setStrokeStyle(2, 0xff0000);
+            this.fieldSprites.push(cardBg);
+
+            const sprite = this.add.image(x, y, card.key)
                 .setDisplaySize(cardWidth, cardHeight)
                 .setInteractive();
 
             sprite.on("pointerdown", () => this.attack(card));
 
-            const attackText = this.add.text(startX + index * spacing, y + cardHeight/2 - 5, "ATK:" + card.attack, {
-                fontSize: Math.max(12, width * 0.035) + "px",
-                color: "#ff0000",
-                backgroundColor: "#000000",
-                padding: { x: 5, y: 3 }
+            const attackText = this.add.text(x, y + cardHeight/2 - 8, "ATK " + card.attack, {
+                fontSize: "13px",
+                color: "#ffffff",
+                backgroundColor: "#ff0000",
+                padding: { x: 7, y: 3 },
+                fontStyle: "bold"
             }).setOrigin(0.5);
 
             this.fieldSprites.push(sprite);
