@@ -178,7 +178,7 @@ class MainScene extends Phaser.Scene {
             sprite.setScale(scale);
             sprite.setInteractive();
 
-            sprite.on("pointerdown", () => this.summon(card));
+            sprite.on("pointerdown", () => this.attack(card, sprite));
 
             this.handSprites.push(sprite);
         });
