@@ -313,6 +313,7 @@ class MainScene extends Phaser.Scene {
     this.updateUI();
     this.showTurnBanner("TURN " + this.turn, "START");
 }
+}
 
 const config = {
     type: Phaser.AUTO,
