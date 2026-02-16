@@ -14,6 +14,7 @@ class MainScene extends Phaser.Scene {
         this.turn = 1;
         this.actionsLeft = 4;
         this.enemyLife = 40;
+        this.enemyMaxLife = 40;  // 最大HP
 
         this.hand = [];
         this.field = [];
@@ -50,11 +51,31 @@ class MainScene extends Phaser.Scene {
 
         this.add.rectangle(width/2, height/2, width, height, 0x1e1e2f);
 
-        // 敵HP表示（上部中央）
-        this.enemyText = this.add.text(width/2, 50, "", {
-            fontSize: "28px",
-            color: "#ff6666",
-            fontStyle: "bold"
+        // 敵HPゲージ（上部中央、少し下に）
+        const hpBarY = 100;
+        const hpBarWidth = 280;
+        const hpBarHeight = 30;
+
+        // ゲージ背景
+        this.hpBarBg = this.add.rectangle(width/2, hpBarY, hpBarWidth, hpBarHeight, 0x333333)
+            .setStrokeStyle(3, 0xffffff);
+
+        // ゲージ本体
+        this.hpBar = this.add.rectangle(
+            width/2 - hpBarWidth/2, 
+            hpBarY, 
+            hpBarWidth, 
+            hpBarHeight, 
+            0xff3333
+        ).setOrigin(0, 0.5);
+
+        // HP数値表示
+        this.enemyText = this.add.text(width/2, hpBarY, "", {
+            fontSize: "20px",
+            color: "#ffffff",
+            fontStyle: "bold",
+            stroke: "#000000",
+            strokeThickness: 4
         }).setOrigin(0.5);
 
         // ターン情報（左上）
@@ -97,7 +118,24 @@ class MainScene extends Phaser.Scene {
     // UI更新
     // -------------------------
     updateUI() {
-        this.enemyText.setText("Enemy HP: " + this.enemyLife);
+        // HPを0以下にしない
+        if (this.enemyLife < 0) this.enemyLife = 0;
+
+        // ゲージの幅を更新
+        const hpBarWidth = 280;
+        const hpPercent = this.enemyLife / this.enemyMaxLife;
+        this.hpBar.width = hpBarWidth * hpPercent;
+
+        // ゲージの色を変更（HP低下で赤→黄色→緑）
+        if (hpPercent > 0.5) {
+            this.hpBar.setFillStyle(0x33ff33);  // 緑
+        } else if (hpPercent > 0.25) {
+            this.hpBar.setFillStyle(0xffcc00);  // 黄色
+        } else {
+            this.hpBar.setFillStyle(0xff3333);  // 赤
+        }
+
+        this.enemyText.setText(this.enemyLife + " / " + this.enemyMaxLife);
         this.turnText.setText("Turn: " + this.turn + "\nActions: " + this.actionsLeft);
         this.deckText.setText("Deck: " + this.deck.length);
     }
@@ -131,7 +169,7 @@ class MainScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        const y = height - 140;  // 下から140px
+        const y = height - 140;
         const cardWidth = 70;
         const cardHeight = 100;
         const spacing = 80;
@@ -182,7 +220,7 @@ class MainScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        const y = height * 0.4;  // 画面の40%位置
+        const y = height * 0.4;
         const cardWidth = 85;
         const cardHeight = 120;
         const spacing = 95;
@@ -212,6 +250,10 @@ class MainScene extends Phaser.Scene {
         cardData.hasAttacked = true;
 
         this.enemyLife -= cardData.attack;
+        
+        // マイナスにしない
+        if (this.enemyLife < 0) this.enemyLife = 0;
+
         this.updateUI();
 
         this.playAttackAnimation(cardSprite, cardData.attack);
