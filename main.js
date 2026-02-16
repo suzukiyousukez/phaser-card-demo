@@ -14,7 +14,7 @@ class MainScene extends Phaser.Scene {
         this.turn = 1;
         this.actionsLeft = 4;
         this.enemyLife = 40;
-        this.enemyMaxLife = 40;  // 最大HP
+        this.enemyMaxLife = 40;
 
         this.hand = [];
         this.field = [];
@@ -27,9 +27,9 @@ class MainScene extends Phaser.Scene {
         this.showTurnBanner("TURN 1", "DRAW");
     }
 
-    // -------------------------
+    // =========================
     // デッキ生成
-    // -------------------------
+    // =========================
     createDeck() {
         for (let i = 0; i < 20; i++) {
             this.deck.push({
@@ -41,9 +41,9 @@ class MainScene extends Phaser.Scene {
         Phaser.Utils.Array.Shuffle(this.deck);
     }
 
-    // -------------------------
+    // =========================
     // UI作成
-    // -------------------------
+    // =========================
     createLayout() {
 
         const width = this.cameras.main.width;
@@ -51,25 +51,22 @@ class MainScene extends Phaser.Scene {
 
         this.add.rectangle(width/2, height/2, width, height, 0x1e1e2f);
 
-        // 敵HPゲージ（上部中央、少し下に）
+        // HPバー
         const hpBarY = 100;
         const hpBarWidth = 280;
         const hpBarHeight = 30;
 
-        // ゲージ背景
         this.hpBarBg = this.add.rectangle(width/2, hpBarY, hpBarWidth, hpBarHeight, 0x333333)
             .setStrokeStyle(3, 0xffffff);
 
-        // ゲージ本体
         this.hpBar = this.add.rectangle(
-            width/2 - hpBarWidth/2, 
-            hpBarY, 
-            hpBarWidth, 
-            hpBarHeight, 
+            width/2 - hpBarWidth/2,
+            hpBarY,
+            hpBarWidth,
+            hpBarHeight,
             0xff3333
         ).setOrigin(0, 0.5);
 
-        // HP数値表示
         this.enemyText = this.add.text(width/2, hpBarY, "", {
             fontSize: "20px",
             color: "#ffffff",
@@ -78,7 +75,7 @@ class MainScene extends Phaser.Scene {
             strokeThickness: 4
         }).setOrigin(0.5);
 
-        // ターン情報（左上）
+        // ターン情報
         this.turnText = this.add.text(20, 20, "", {
             fontSize: "18px",
             color: "#ffffff",
@@ -86,7 +83,7 @@ class MainScene extends Phaser.Scene {
             padding: { x: 8, y: 5 }
         });
 
-        // 山札（右上）
+        // デッキ（タップでドロー）
         this.deckText = this.add.text(width - 20, 20, "", {
             fontSize: "18px",
             color: "#ffffff",
@@ -95,54 +92,62 @@ class MainScene extends Phaser.Scene {
         }).setOrigin(1, 0).setInteractive();
 
         this.deckText.on("pointerdown", () => {
-            if (this.actionsLeft > 0) {
-                this.actionsLeft--;
-                this.drawCard(1);
-            }
+
+            if (this.actionsLeft <= 0) return;
+            if (this.deck.length <= 0) return;
+            if (this.hand.length >= 4) return;
+
+            this.actionsLeft--;
+            this.drawCard(1);
         });
 
-        // エンドターンボタン（最下部中央）
+        // エンドターン
         const endBtn = this.add.text(width/2, height - 30, "END TURN", {
             fontSize: "24px",
             color: "#ffffff",
             backgroundColor: "#cc0000",
             padding: { x: 30, y: 10 }
-        }).setOrigin(0.5).setInteractive();
+        }).setOrigin(0.5).setInteractive().setDepth(1000);
 
         endBtn.on("pointerdown", () => this.endTurn());
 
         this.updateUI();
     }
 
-    // -------------------------
+    // =========================
     // UI更新
-    // -------------------------
+    // =========================
     updateUI() {
-        // HPを0以下にしない
+
         if (this.enemyLife < 0) this.enemyLife = 0;
 
-        // ゲージの幅を更新
         const hpBarWidth = 280;
         const hpPercent = this.enemyLife / this.enemyMaxLife;
         this.hpBar.width = hpBarWidth * hpPercent;
 
-        // ゲージの色を変更（HP低下で赤→黄色→緑）
         if (hpPercent > 0.5) {
-            this.hpBar.setFillStyle(0x33ff33);  // 緑
+            this.hpBar.setFillStyle(0x33ff33);
         } else if (hpPercent > 0.25) {
-            this.hpBar.setFillStyle(0xffcc00);  // 黄色
+            this.hpBar.setFillStyle(0xffcc00);
         } else {
-            this.hpBar.setFillStyle(0xff3333);  // 赤
+            this.hpBar.setFillStyle(0xff3333);
         }
 
         this.enemyText.setText(this.enemyLife + " / " + this.enemyMaxLife);
         this.turnText.setText("Turn: " + this.turn + "\nActions: " + this.actionsLeft);
         this.deckText.setText("Deck: " + this.deck.length);
+
+        // デッキ押せるかどうか視覚化
+        if (this.actionsLeft <= 0 || this.hand.length >= 4 || this.deck.length <= 0) {
+            this.deckText.setAlpha(0.4);
+        } else {
+            this.deckText.setAlpha(1);
+        }
     }
 
-    // -------------------------
+    // =========================
     // ドロー
-    // -------------------------
+    // =========================
     drawCard(count = 1) {
 
         for (let i = 0; i < count; i++) {
@@ -158,9 +163,9 @@ class MainScene extends Phaser.Scene {
         this.updateUI();
     }
 
-    // -------------------------
-    // 手札描画（画面下部）
-    // -------------------------
+    // =========================
+    // 手札描画
+    // =========================
     renderHand() {
 
         if (this.handSprites) this.handSprites.forEach(s => s.destroy());
@@ -169,7 +174,7 @@ class MainScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        const y = height - 140;
+        const y = height - 160;
         const cardWidth = 70;
         const cardHeight = 100;
         const spacing = 80;
@@ -187,9 +192,9 @@ class MainScene extends Phaser.Scene {
         });
     }
 
-    // -------------------------
+    // =========================
     // 召喚
-    // -------------------------
+    // =========================
     summon(cardData) {
 
         if (this.actionsLeft <= 0) return;
@@ -199,9 +204,7 @@ class MainScene extends Phaser.Scene {
 
         this.hand.splice(this.hand.indexOf(cardData), 1);
 
-        // 召喚ターンは攻撃不可
         cardData.hasAttacked = true;
-
         this.field.push(cardData);
 
         this.renderHand();
@@ -209,9 +212,9 @@ class MainScene extends Phaser.Scene {
         this.updateUI();
     }
 
-    // -------------------------
-    // フィールド描画（画面中央）
-    // -------------------------
+    // =========================
+    // フィールド描画
+    // =========================
     renderField() {
 
         if (this.fieldSprites) this.fieldSprites.forEach(s => s.destroy());
@@ -220,7 +223,7 @@ class MainScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        const y = height * 0.4;
+        const y = height * 0.45;
         const cardWidth = 85;
         const cardHeight = 120;
         const spacing = 95;
@@ -238,9 +241,9 @@ class MainScene extends Phaser.Scene {
         });
     }
 
-    // -------------------------
+    // =========================
     // 攻撃
-    // -------------------------
+    // =========================
     attack(cardData, cardSprite) {
 
         if (this.actionsLeft <= 0) return;
@@ -250,12 +253,9 @@ class MainScene extends Phaser.Scene {
         cardData.hasAttacked = true;
 
         this.enemyLife -= cardData.attack;
-        
-        // マイナスにしない
         if (this.enemyLife < 0) this.enemyLife = 0;
 
         this.updateUI();
-
         this.playAttackAnimation(cardSprite, cardData.attack);
 
         if (this.enemyLife <= 0) {
@@ -265,9 +265,9 @@ class MainScene extends Phaser.Scene {
         }
     }
 
-    // -------------------------
+    // =========================
     // ターン終了
-    // -------------------------
+    // =========================
     endTurn() {
 
         this.turn++;
@@ -281,9 +281,9 @@ class MainScene extends Phaser.Scene {
         this.showTurnBanner("TURN " + this.turn, "START");
     }
 
-    // -------------------------
-    // ATTACK演出
-    // -------------------------
+    // =========================
+    // 攻撃演出
+    // =========================
     playAttackAnimation(cardSprite, damage) {
 
         const width = this.cameras.main.width;
@@ -310,7 +310,7 @@ class MainScene extends Phaser.Scene {
 
         this.showTurnBanner("ATTACK", "-" + damage);
 
-        const dmgText = this.add.text(width / 2, height / 2 - 100, "-" + damage, {
+        const dmgText = this.add.text(width/2, height/2 - 100, "-" + damage, {
             fontSize: "60px",
             color: "#ff3333",
             fontStyle: "bold"
@@ -328,17 +328,15 @@ class MainScene extends Phaser.Scene {
         });
     }
 
-    // -------------------------
+    // =========================
     // ターンバナー
-    // -------------------------
+    // =========================
     showTurnBanner(mainText, subText) {
 
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
-        const dim = this.add.rectangle(0, 0, width, height, 0x000000, 0.4)
-            .setOrigin(0);
-
+        const dim = this.add.rectangle(0, 0, width, height, 0x000000, 0.4).setOrigin(0);
         const bar = this.add.rectangle(width/2, height/2, width, 140, 0x000000, 0.75);
 
         const title = this.add.text(width/2, height/2 - 20, mainText, {
