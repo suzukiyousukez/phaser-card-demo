@@ -16,6 +16,7 @@ class MainScene extends Phaser.Scene {
         this.turn = 1;
         this.actionsLeft = 4;
         this.enemyHP = 40;
+        this.gameOver = false;
 
         this.deck = [
             { key: "card1", attack: 5 },
@@ -28,6 +29,7 @@ class MainScene extends Phaser.Scene {
 
         this.hand = [];
         this.field = [];
+        this.usedCards = []; // 使用済みカード
 
         // 初期ドロー
         this.drawCard(4);
@@ -65,6 +67,7 @@ class MainScene extends Phaser.Scene {
         }).setOrigin(0.5).setInteractive();
 
         this.deckText.on("pointerdown", () => {
+            if (this.gameOver) return;
             if (this.actionsLeft > 0) {
                 this.actionsLeft--;
                 this.drawCard(1);
@@ -80,6 +83,14 @@ class MainScene extends Phaser.Scene {
         }).setOrigin(0.5).setInteractive();
 
         this.endBtn.on("pointerdown", () => this.endTurn());
+
+        // 勝敗表示用（初期は非表示）
+        this.resultText = this.add.text(width/2, height/2, "", {
+            fontSize: "36px",
+            color: "#ffff00",
+            backgroundColor: "#000000",
+            padding: { x: 30, y: 20 }
+        }).setOrigin(0.5).setVisible(false);
 
         this.updateUI();
     }
@@ -99,7 +110,7 @@ class MainScene extends Phaser.Scene {
         for (let i = 0; i < num; i++) {
 
             if (this.deck.length === 0) return;
-            if (this.hand.length >= 4) return; // 手札上限4枚
+            if (this.hand.length >= 6) return; // 手札上限を6枚に変更
 
             const card = this.deck.shift();
             this.hand.push(card);
@@ -115,6 +126,7 @@ class MainScene extends Phaser.Scene {
 
     summon(card) {
 
+        if (this.gameOver) return;
         if (this.actionsLeft <= 0) return;
 
         this.actionsLeft--;
@@ -135,6 +147,7 @@ class MainScene extends Phaser.Scene {
 
     attack(card) {
 
+        if (this.gameOver) return;
         if (this.actionsLeft <= 0) return;
 
         this.actionsLeft--;
@@ -142,7 +155,29 @@ class MainScene extends Phaser.Scene {
 
         if (this.enemyHP < 0) this.enemyHP = 0;
 
+        // カードをフィールドから使用済みへ移動
+        const index = this.field.indexOf(card);
+        if (index !== -1) {
+            this.field.splice(index, 1);
+            this.usedCards.push(card);
+        }
+
         this.updateUI();
+        this.renderAll();
+
+        // 勝利判定
+        if (this.enemyHP === 0) {
+            this.showResult("YOU WIN!");
+        }
+    }
+
+    // =========================
+    // 勝敗表示
+    // =========================
+
+    showResult(message) {
+        this.gameOver = true;
+        this.resultText.setText(message).setVisible(true);
     }
 
     // =========================
@@ -150,8 +185,14 @@ class MainScene extends Phaser.Scene {
     // =========================
 
     endTurn() {
+        if (this.gameOver) return;
+        
         this.turn++;
         this.actionsLeft = 4;
+        
+        // ターン開始時に2枚ドロー
+        this.drawCard(2);
+        
         this.updateUI();
     }
 
@@ -167,7 +208,9 @@ class MainScene extends Phaser.Scene {
     renderHand() {
 
         if (this.handSprites) this.handSprites.forEach(s => s.destroy());
+        if (this.handTexts) this.handTexts.forEach(t => t.destroy());
         this.handSprites = [];
+        this.handTexts = [];
 
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
@@ -184,14 +227,25 @@ class MainScene extends Phaser.Scene {
 
             sprite.on("pointerdown", () => this.summon(card));
 
+            // 攻撃力を表示
+            const attackText = this.add.text(startX + index * spacing, y + 40, "ATK:" + card.attack, {
+                fontSize: "12px",
+                color: "#ffff00",
+                backgroundColor: "#000000",
+                padding: { x: 4, y: 2 }
+            }).setOrigin(0.5);
+
             this.handSprites.push(sprite);
+            this.handTexts.push(attackText);
         });
     }
 
     renderField() {
 
         if (this.fieldSprites) this.fieldSprites.forEach(s => s.destroy());
+        if (this.fieldTexts) this.fieldTexts.forEach(t => t.destroy());
         this.fieldSprites = [];
+        this.fieldTexts = [];
 
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
@@ -208,7 +262,16 @@ class MainScene extends Phaser.Scene {
 
             sprite.on("pointerdown", () => this.attack(card));
 
+            // 攻撃力を表示
+            const attackText = this.add.text(startX + index * spacing, y + 55, "ATK:" + card.attack, {
+                fontSize: "14px",
+                color: "#ff0000",
+                backgroundColor: "#000000",
+                padding: { x: 5, y: 3 }
+            }).setOrigin(0.5);
+
             this.fieldSprites.push(sprite);
+            this.fieldTexts.push(attackText);
         });
     }
 }
